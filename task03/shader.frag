@@ -10,10 +10,19 @@ uniform float time; // current time given from CPU
  * pos: position to evaluate SDF
  * hsize: half size in the XYZ axis
  */
-float sdf_box( vec3 pos, vec3 hsize )
+float sdf_sphere( vec3 pos, float outer_rad )
 {
-  vec3 q = abs(pos) - hsize;
-  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+  return length(pos) - outer_rad;
+}
+
+float opSubtraction( float d1, float d2 ) 
+{ 
+  return max(-d1,d2);       
+}
+
+vec3 opRepLim( vec3 p, float s, vec3 lima, vec3 limb )
+{
+  return p - s*clamp(floor(p/s + 0.5), lima, limb);
 }
 
 // Definition of singed distance funtion called from
@@ -25,9 +34,15 @@ float SDF(vec3 pos)
   // The radius of the small spheres is `0.12` and it's repeaded at intrval of `0.2` in the grid pattern
   // Look Inigo Quilez's article for hints:
   // https://iquilezles.org/articles/distfunctions/
+  float lim = 10.0;  // I have no idea how to decide this value   
+  float interval = 0.2;
+  float rad_small = 0.12;
+  float rad_big = 0.8; 
 
-  // for "problem2" the code below is not used.
-  return sdf_box(pos, vec3(0.1,0.2,0.3));
+  vec3 new_p = opRepLim(pos, interval, vec3(-lim,-lim,-lim), vec3(lim,lim,lim));  
+  float d1 = sdf_sphere(new_p, rad_small);
+  float d2 = sdf_sphere(pos, rad_big);
+  return opSubtraction(d1, d2);  
 }
 
 void main()
