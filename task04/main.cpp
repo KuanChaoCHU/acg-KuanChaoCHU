@@ -30,6 +30,16 @@
 namespace dfm2 = delfem2;
 
 // ----------------------------------------
+double Cross3(
+    double result[3],
+    const double vec1[3],
+    const double vec2[3])
+{
+    result[0] = vec1[1] * vec2[2] - vec2[1] * vec1[2];
+    result[1] = vec1[2] * vec2[0] - vec2[2] * vec1[0];
+    result[2] = vec1[0] * vec2[1] - vec2[0] * vec1[1];
+    return 0;
+}
 
 /*! function to compute "weight" and "direction"
  * @param[out] dir
@@ -47,11 +57,30 @@ double SamplingHemisphere(
   // hint2: generate two float values using "dfm2::MyERand48<double>(Xi)". One will be longitude and another will be latitude
   // hint3: for longitude use inverse sampling method to achieve cosine weighted sample.
   // hint4: first assume z is the up in the polar coordinate, then rotate the sampled direction such that "z" will be up.
-  // write some codes below (5-10 lines)
-
+  // write some codes below (5-10 lines)  
+  const auto d0 = dfm2::MyERand48<double>(Xi);
+  const auto d1 = dfm2::MyERand48<double>(Xi);  
+  const double theta = std::acos(std::sqrt(d0));
+  const double phi = d1 * 2 * M_PI; 
+  double dir0[3] = {
+      std::sin(theta) * std::cos(phi),
+      std::sin(theta) * std::sin(phi),
+      std::cos(theta)
+  };
+  
+  double x[3] = {1,0,0};
+  double y[3];
+  Cross3(y,nrm,x);
+  dfm2::Normalize3(y);
+  Cross3(x,y,nrm);
+  dir[0] = x[0]*dir0[0] + y[0]*dir0[1] + nrm[0]*dir0[2];
+  dir[1] = x[1]*dir0[0] + y[1]*dir0[1] + nrm[1]*dir0[2];
+  dir[2] = x[2]*dir0[0] + y[2]*dir0[1] + nrm[2]*dir0[2];
+  return 1.0; 
 
   // below: naive implementation to "uniformly" sample hemisphere using "rejection sampling"
   // to not be used for the "problem2" in the assignment
+  /*
   for(int i=0;i<10;++i) { // 10 is a magic number
     const auto d0 = dfm2::MyERand48<double>(Xi);  // you can sample uniform distribution [0,1] with this function
     const auto d1 = dfm2::MyERand48<double>(Xi);
@@ -70,8 +99,10 @@ double SamplingHemisphere(
     if( cos < 0 ){ continue; }
     return cos*2;  // (coefficient=1/M_PI) * (area_of_hemisphere=M_PI*2) = 2
   }
+  */
   return 0;
-}
+  
+}  
 
 double SampleAmbientOcclusion(
     std::array<unsigned short, 3> &Xi,
